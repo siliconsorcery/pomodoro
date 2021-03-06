@@ -1,64 +1,100 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pomodoro/models/pomodoro.dart';
+import 'package:pomodoro/routes/timer_page.dart';
+import 'package:pomodoro/services/route_service/route_service.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Pomodoro!',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Wrapper(
+        title: "Pomodoro!",
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title}) : super(key: key);
+class Wrapper extends ConsumerWidget {
+  Wrapper({Key? key, this.title}) : super(key: key);
 
   final String? title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, watch) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title!),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            StageSelection(PomodoroStage.work),
+            StageSelection(PomodoroStage.shortBreak),
+            StageSelection(PomodoroStage.longBreak),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+      body: Navigator(
+        pages: [
+          TimerPage(watch(routeServiceProvider).currentStage),
+        ],
+        onPopPage: (route, result) {
+          return true;
+        },
+      ),
+    );
+  }
+}
+
+class StageSelection extends ConsumerWidget {
+  final PomodoroStage stage;
+  const StageSelection(this.stage, {Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, watch) {
+    String message;
+    PomodoroStage currentStage = watch(routeServiceProvider).currentStage;
+
+    switch (stage) {
+      case PomodoroStage.work:
+        message = "Work";
+        break;
+      case PomodoroStage.shortBreak:
+        message = "Short Break";
+        break;
+      case PomodoroStage.longBreak:
+        message = "Long Break";
+        break;
+    }
+
+    BoxDecoration? decoration;
+
+    if (stage == currentStage) {
+      decoration = BoxDecoration(
+        color: Colors.white24,
+        border: Border(
+          bottom: BorderSide(color: Colors.white),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () {
+        context.read(routeServiceProvider).updateRoute(stage);
+      },
+      child: Container(
+        decoration: decoration,
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Text(message),
+        ),
       ),
     );
   }
