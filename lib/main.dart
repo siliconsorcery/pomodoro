@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pomodoro/models/pomodoro.dart';
 import 'package:pomodoro/routes/timer_page.dart';
 import 'package:pomodoro/services/route_service/route_service.dart';
+import 'package:pomodoro/theme/theme.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -13,9 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Pomodoro!',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: theme,
       home: Wrapper(
         title: "Pomodoro!",
       ),
@@ -31,23 +30,32 @@ class Wrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, watch) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      appBar: AppBar(),
+      body: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: (MediaQuery.of(context).size.height * .25) / 2,
+          horizontal: (MediaQuery.of(context).size.width * .25) / 2,
+        ),
+        child: Column(
           children: [
-            StageSelection(PomodoroStage.work),
-            StageSelection(PomodoroStage.shortBreak),
-            StageSelection(PomodoroStage.longBreak),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var stage in PomodoroStage.values) Flexible(child: StageSelection(stage))
+              ],
+            ),
+            Flexible(
+              child: Navigator(
+                pages: [
+                  TimerPage(watch(routeServiceProvider).currentStage),
+                ],
+                onPopPage: (route, result) {
+                  return true;
+                },
+              ),
+            ),
           ],
         ),
-      ),
-      body: Navigator(
-        pages: [
-          TimerPage(watch(routeServiceProvider).currentStage),
-        ],
-        onPopPage: (route, result) {
-          return true;
-        },
       ),
     );
   }
@@ -93,7 +101,11 @@ class StageSelection extends ConsumerWidget {
         decoration: decoration,
         child: Padding(
           padding: const EdgeInsets.all(10.0),
-          child: Text(message),
+          child: Text(
+            message,
+            style: Theme.of(context).primaryTextTheme.headline4,
+            maxLines: 2,
+          ),
         ),
       ),
     );

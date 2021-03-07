@@ -1,5 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pomodoro/models/pomodoro.dart';
+import 'package:pomodoro/services/pomodoro_service/pomodoro_service.dart';
+import 'package:pomodoro/util/extensions/num_extensions.dart';
 
 /// The timer page is responsible for showing how much time is left in the
 /// current pomodoro service.
@@ -31,20 +36,42 @@ class TimerSection extends StatefulWidget {
 class _TimerSectionState extends State<TimerSection> {
   @override
   Widget build(BuildContext context) {
-    String message;
+    return Center(
+      child: Consumer(
+        builder: (context, watch, child) {
+          var pomodoroService = watch(pomodoroServiceProvider);
+          int secondsLeft = pomodoroService.pomodoro.secondsLeft;
+          int minutes = secondsLeft ~/ 60;
+          int seconds = secondsLeft % 60;
 
-    switch (widget.currentStage) {
-      case PomodoroStage.work:
-        message = "Work!";
-        break;
-      case PomodoroStage.shortBreak:
-        message = "Short Break!";
-        break;
-      case PomodoroStage.longBreak:
-        message = "Long Break!";
-        break;
-    }
-
-    return Center(child: Text(message));
+          return Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Center(
+                child: Text(
+                  "${minutes.toStringWithZeroPadding(2)}:${seconds.toStringWithZeroPadding(2)}",
+                  style: Theme.of(context).primaryTextTheme.headline1!.merge(
+                        TextStyle(
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                ),
+              ),
+              ElevatedButton(
+                child: Text(pomodoroService.timerRunning ? "Stop" : "Start"),
+                onPressed: () {
+                  if (pomodoroService.timerRunning) {
+                    pomodoroService.stopTimer();
+                  } else {
+                    pomodoroService.startTimer();
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

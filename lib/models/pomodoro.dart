@@ -1,5 +1,3 @@
-import 'dart:async';
-
 /// The three stages of pomodoro: work, short break, and long break
 enum PomodoroStage {
   work,
@@ -9,8 +7,6 @@ enum PomodoroStage {
 
 /// Keeps track of which stage of the pomodoro we're in
 class Pomodoro {
-  Timer? t;
-
   PomodoroStage _currentStage = PomodoroStage.work;
 
   /// Number of seconds left until the timer is over
@@ -19,11 +15,28 @@ class Pomodoro {
 
   int get secondsLeft => _secondsLeft;
 
+  /// Tick the timer left in ths pomodoro down by one.
+  /// Returns true if the time is over
+  bool tick() {
+    return (--_secondsLeft) == 0;
+  }
+
   Pomodoro();
 
   set currentStage(PomodoroStage newStage) {
     _currentStage = newStage;
-    _secondsLeft = 25 * 60;
+
+    switch (_currentStage) {
+      case PomodoroStage.work:
+        _secondsLeft = 25 * 60;
+        break;
+      case PomodoroStage.shortBreak:
+        _secondsLeft = 5 * 60;
+        break;
+      case PomodoroStage.longBreak:
+        _secondsLeft = 15 * 60;
+        break;
+    }
   }
 
   /// The current stage of pomodoro
