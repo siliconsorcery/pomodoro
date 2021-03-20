@@ -53,4 +53,22 @@ class PomodoroService extends ChangeNotifier {
   bool get timerRunning => _timer?.isActive ?? false;
 
   PomodoroStage get currentStage => pomodoro.currentStage;
+
+  /// Configures the time for the given stage. This will reset the timer
+  void setTimeForStage({required PomodoroStage stage, required int minutes}) {
+    switch (stage) {
+      case PomodoroStage.work:
+        pomodoro.workMin = minutes;
+        break;
+      case PomodoroStage.shortBreak:
+        pomodoro.shortBreakMin = minutes;
+        break;
+      case PomodoroStage.longBreak:
+        pomodoro.longBreakMin = minutes;
+        break;
+    }
+
+    stopTimer();
+    notifyListeners();
+  }
 }

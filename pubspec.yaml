@@ -9,6 +9,11 @@ environment:
 
 dependencies:
     flutter_riverpod: ^0.13.1
+    # audioplayers:
+    #     git:
+    #         url: https://github.com/mabDc/audioplayers.git
+    #         ref: windows
+
     flutter:
         sdk: flutter
 

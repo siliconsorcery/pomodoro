@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pomodoro/models/pomodoro.dart';
 import 'package:pomodoro/routes/timer_page.dart';
 import 'package:pomodoro/theme/theme.dart';
+import 'package:pomodoro/widgets/settings_dialog.dart';
 
 import 'services/pomodoro_service/pomodoro_service.dart';
 
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pomodoro!',
       theme: theme,
+      debugShowCheckedModeBanner: false,
       home: Wrapper(
         title: "Pomodoro!",
       ),
@@ -31,7 +33,27 @@ class Wrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, watch) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: "Restart Pomodoro",
+            icon: Icon(Icons.refresh),
+            onPressed: () {},
+          ),
+          IconButton(
+            tooltip: "Settings",
+            icon: Icon(Icons.settings),
+            onPressed: () async {
+              await showDialog(
+                context: context,
+                builder: (context) {
+                  return SettingsDialog();
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: EdgeInsets.symmetric(
           vertical: (MediaQuery.of(context).size.height * .25) / 2,
@@ -42,7 +64,8 @@ class Wrapper extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                for (var stage in PomodoroStage.values) Flexible(child: StageSelection(stage))
+                for (var stage in PomodoroStage.values)
+                  Flexible(child: _StageSelection(stage))
               ],
             ),
             Flexible(
@@ -62,9 +85,9 @@ class Wrapper extends ConsumerWidget {
   }
 }
 
-class StageSelection extends ConsumerWidget {
+class _StageSelection extends ConsumerWidget {
   final PomodoroStage stage;
-  const StageSelection(this.stage, {Key? key}) : super(key: key);
+  const _StageSelection(this.stage, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, watch) {
