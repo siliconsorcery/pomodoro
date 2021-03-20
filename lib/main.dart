@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pomodoro/models/pomodoro.dart';
 import 'package:pomodoro/routes/timer_page.dart';
-import 'package:pomodoro/services/route_service/route_service.dart';
 import 'package:pomodoro/theme/theme.dart';
+
+import 'services/pomodoro_service/pomodoro_service.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -47,7 +48,7 @@ class Wrapper extends ConsumerWidget {
             Flexible(
               child: Navigator(
                 pages: [
-                  TimerPage(watch(routeServiceProvider).currentStage),
+                  TimerPage(watch(pomodoroServiceProvider).currentStage),
                 ],
                 onPopPage: (route, result) {
                   return true;
@@ -68,7 +69,7 @@ class StageSelection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, watch) {
     String message;
-    PomodoroStage currentStage = watch(routeServiceProvider).currentStage;
+    PomodoroStage currentStage = watch(pomodoroServiceProvider).currentStage;
 
     switch (stage) {
       case PomodoroStage.work:
@@ -95,7 +96,7 @@ class StageSelection extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        context.read(routeServiceProvider).updateRoute(stage);
+        context.read(pomodoroServiceProvider).setPomodoroStage(stage);
       },
       child: Container(
         decoration: decoration,

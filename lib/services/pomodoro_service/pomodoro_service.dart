@@ -25,8 +25,19 @@ class PomodoroService extends ChangeNotifier {
       if (pomodoro.tick()) {
         timer.cancel();
 
+        // sound the alarm.
 
-        // TODO: determine which stage to move to
+        switch (pomodoro.currentStage) {
+          case PomodoroStage.work:
+            setPomodoroStage(PomodoroStage.shortBreak);
+            break;
+          case PomodoroStage.shortBreak:
+            setPomodoroStage(PomodoroStage.work);
+            break;
+          case PomodoroStage.longBreak:
+            setPomodoroStage(PomodoroStage.work);
+            break;
+        }
       }
 
       notifyListeners();
@@ -40,4 +51,6 @@ class PomodoroService extends ChangeNotifier {
   }
 
   bool get timerRunning => _timer?.isActive ?? false;
+
+  PomodoroStage get currentStage => pomodoro.currentStage;
 }
