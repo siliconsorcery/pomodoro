@@ -8,18 +8,17 @@ environment:
     sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
-    flutter_riverpod: ^0.13.1
-    # audioplayers:
-    #     git:
-    #         url: https://github.com/mabDc/audioplayers.git
-    #         ref: windows
-
     flutter:
         sdk: flutter
+    flutter_riverpod: ^0.13.1
+    bitsdojo_window: ^0.1.5
+    audioplayers: ^4.0.1
 
 dev_dependencies:
     flutter_test:
         sdk: flutter
 
 flutter:
-    uses-material-design: true
+  uses-material-design: true
+  assets:
+    - assets/
