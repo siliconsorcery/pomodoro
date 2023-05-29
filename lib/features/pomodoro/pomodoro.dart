@@ -284,10 +284,11 @@ class _TimerWidgetState extends State<TimerWidget> {
                     Radius.circular(16.0),
                   ),
                   onTap: () {
-                    service.playAudio('mixkit-tech-click-1140.wav');
                     if (service.isTimerRunning) {
+                      service.playAudio('mixkit-tech-click-1140.wav');
                       service.pauseTimer();
                     } else {
+                      service.playAudio('mixkit-glitchy-cinematic-suspense-hit-679.wav');
                       service.startTimer();
                     }
                   },
