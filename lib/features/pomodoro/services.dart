@@ -14,6 +14,7 @@ class PomodoroService extends ChangeNotifier {
   Timer? _timer;
   bool _isCountingDown = false;
   AudioPlayer _audioPlayer = AudioPlayer();
+  DateTime _today = DateTime.now();
   List<double> _hours = [
     0.0,
     0.0,
@@ -40,6 +41,7 @@ class PomodoroService extends ChangeNotifier {
     0.0,
     0.0
   ];
+
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   void setStage(PomodoroStage stage) {
@@ -63,6 +65,7 @@ class PomodoroService extends ChangeNotifier {
 
   // q` feat: startTimer
   void startTimer() {
+    _dayChangeResetHours();
     _isCountingDown = true;
     notifyListeners();
 
@@ -108,6 +111,7 @@ class PomodoroService extends ChangeNotifier {
 
   // q` feat: pauseTimer
   void pauseTimer() {
+    _dayChangeResetHours();
     _isCountingDown = false;
     _timer?.cancel();
     notifyListeners();
@@ -147,6 +151,7 @@ class PomodoroService extends ChangeNotifier {
   // q` Get from user preferences default countdown timer for the given stage
   Future<int> getTimeForStage({required PomodoroStage stage}) async {
     final SharedPreferences prefs = await _prefs;
+    _dayChangeResetHours();
     switch (stage) {
       case PomodoroStage.rest:
         return prefs.getInt('restCountDownDefault') ?? 5 * 60;
@@ -162,9 +167,44 @@ class PomodoroService extends ChangeNotifier {
     required PomodoroStage stage,
     required int seconds,
   }) async {
+    _dayChangeResetHours();
     pomodoro.secondsLeft = seconds;
     notifyListeners();
 
     setTimeForStage(stage: stage, seconds: seconds);
+  }
+
+  void _dayChangeResetHours() {
+    final now = DateTime.now();
+    if (_today.day == now.day && _today.month == now.month && _today.year == now.year) {
+      return;
+    } else {
+      _hours = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ];
+    }
   }
 }
