@@ -1,39 +1,22 @@
+// q` docs: PomodoroStage
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// The three stages of pomodoro: work, short break, and long break
 enum PomodoroStage {
   work,
-  shortBreak,
-  longBreak,
+  rest,
+  play,
 }
 
+// q` docs: Pomodoro
 /// Keeps track of which stage of the pomodoro we're in
 class Pomodoro {
-  late PomodoroStage _currentStage;
+  late PomodoroStage _stage;
   late int _secondsLeft;
 
   Pomodoro() {
-    _currentStage = PomodoroStage.work;
-    _secondsLeft = workMin * 60;
-  }
-
-  int _workMin = 25;
-  int get workMin => _workMin;
-  set workMin(int newMin) {
-    _workMin = newMin;
-    _calculateSecondsLeft();
-  }
-
-  int _shortBreakMin = 5;
-  int get shortBreakMin => _shortBreakMin;
-  set shortBreakMin(int newMin) {
-    _shortBreakMin = newMin;
-    _calculateSecondsLeft();
-  }
-
-  int _longBreakMin = 15;
-  int get longBreakMin => _longBreakMin;
-  set longBreakMin(int newMin) {
-    _longBreakMin = newMin;
-    _calculateSecondsLeft();
+    _stage = PomodoroStage.work;
+    _secondsLeft = 25 * 60;
   }
 
   int get secondsLeft => _secondsLeft;
@@ -47,25 +30,25 @@ class Pomodoro {
     return (--_secondsLeft) == 0;
   }
 
-  set currentStage(PomodoroStage newStage) {
-    _currentStage = newStage;
-    _calculateSecondsLeft();
-  }
-
   /// The current stage of pomodoro
-  PomodoroStage get currentStage => _currentStage;
+  PomodoroStage get stage => _stage;
 
-  /// Calculates the number of seconds left the current stage
-  void _calculateSecondsLeft() {
-    switch (_currentStage) {
+  void setStage(PomodoroStage newStage) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    _stage = newStage;
+    switch (_stage) {
+      case PomodoroStage.rest:
+        final restCountDownDefault = prefs.getInt('restCountDownDefault') ?? 5 * 60;
+        _secondsLeft = restCountDownDefault;
+        break;
       case PomodoroStage.work:
-        _secondsLeft = workMin * 60;
+        final workCountDownDefault = prefs.getInt('workCountDownDefault') ?? 25 * 60;
+        _secondsLeft = workCountDownDefault;
         break;
-      case PomodoroStage.shortBreak:
-        _secondsLeft = shortBreakMin * 60;
-        break;
-      case PomodoroStage.longBreak:
-        _secondsLeft = longBreakMin * 60;
+      case PomodoroStage.play:
+        final playCountDownDefault = prefs.getInt('playCountDownDefault') ?? 60 * 60;
+        _secondsLeft = playCountDownDefault;
         break;
     }
   }

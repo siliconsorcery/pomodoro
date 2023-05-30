@@ -9,19 +9,20 @@ import 'package:pomodoro/features/pomodoro/services.dart';
 
 final audioPlayer = AudioPlayer();
 
+// q` docs: PomodoroPage
 class PomodoroPage extends ConsumerWidget {
   PomodoroPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, watch) {
-    final stage = watch(pomodoroServiceProvider).currentStage;
+    final stage = watch(pomodoroServiceProvider).stage;
     final baseColor = () {
       switch (stage) {
         case PomodoroStage.work:
           return Colors.green;
-        case PomodoroStage.shortBreak:
+        case PomodoroStage.rest:
           return Colors.amber.shade800;
-        case PomodoroStage.longBreak:
+        case PomodoroStage.play:
           return Colors.blue;
       }
     }();
@@ -54,24 +55,6 @@ class PomodoroPage extends ConsumerWidget {
             ),
           ),
           Spacer(),
-          // InkWell(
-          //   borderRadius: BorderRadius.all(Radius.circular(12.0)),
-          //   onTap: () async {
-          //     await showDialog(
-          //       context: context,
-          //       builder: (context) {
-          //         return SettingsDialog();
-          //       },
-          //     );
-          //   },
-          //   child: Padding(
-          //     padding: const EdgeInsets.all(8.0),
-          //     child: Icon(
-          //       Icons.settings,
-          //       color: Colors.white,
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -97,8 +80,8 @@ class PomodoroPage extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _StageSelection(PomodoroStage.work),
-                        _StageSelection(PomodoroStage.shortBreak),
-                        _StageSelection(PomodoroStage.longBreak),
+                        _StageSelection(PomodoroStage.rest),
+                        _StageSelection(PomodoroStage.play),
                       ],
                     ),
                   ),
@@ -113,6 +96,7 @@ class PomodoroPage extends ConsumerWidget {
   }
 }
 
+// q` docs: _StageSelection
 class _StageSelection extends ConsumerWidget {
   final PomodoroStage stage;
   const _StageSelection(this.stage, {Key? key}) : super(key: key);
@@ -121,17 +105,17 @@ class _StageSelection extends ConsumerWidget {
   Widget build(BuildContext context, watch) {
     String message;
     var service = watch(pomodoroServiceProvider);
-    PomodoroStage currentStage = service.currentStage;
+    PomodoroStage currentStage = service.stage;
 
     switch (stage) {
+      case PomodoroStage.rest:
+        message = "Rest";
+        break;
       case PomodoroStage.work:
-        message = "Pomodoro";
+        message = "Work";
         break;
-      case PomodoroStage.shortBreak:
-        message = "Short Break";
-        break;
-      case PomodoroStage.longBreak:
-        message = "Long Break";
+      case PomodoroStage.play:
+        message = "Play";
         break;
     }
 
@@ -148,7 +132,7 @@ class _StageSelection extends ConsumerWidget {
     return InkWell(
       onTap: () {
         service.playAudio('mixkit-tech-click-1140.wav');
-        context.read(pomodoroServiceProvider).setPomodoroStage(stage);
+        context.read(pomodoroServiceProvider).setStage(stage);
       },
       borderRadius: BorderRadius.all(Radius.circular(8.0)),
       child: DecoratedBox(
@@ -207,6 +191,7 @@ final theme = ThemeData(
   textTheme: Typography.material2018().englishLike,
 );
 
+// q` docs: TimerWidget
 class TimerWidget extends StatefulWidget {
   final PomodoroStage stage;
 
@@ -216,6 +201,7 @@ class TimerWidget extends StatefulWidget {
   _TimerWidgetState createState() => _TimerWidgetState();
 }
 
+// q` docs: _TimerWidgetState
 class _TimerWidgetState extends State<TimerWidget> {
   double dragSecondsLeft = 0.0;
 
@@ -225,7 +211,8 @@ class _TimerWidgetState extends State<TimerWidget> {
       child: Consumer(
         builder: (context, watch, child) {
           var service = watch(pomodoroServiceProvider);
-          final stage = service.pomodoro.currentStage;
+          final hours = service.hours;
+          final stage = service.pomodoro.stage;
           final secondsLeft = service.pomodoro.secondsLeft;
           final minutes = (secondsLeft ~/ 60).toStringWithZeroPadding(2);
           final seconds = (secondsLeft % 60).toStringWithZeroPadding(2);
@@ -240,9 +227,9 @@ class _TimerWidgetState extends State<TimerWidget> {
             switch (stage) {
               case PomodoroStage.work:
                 return Colors.green;
-              case PomodoroStage.shortBreak:
+              case PomodoroStage.rest:
                 return Colors.amber.shade800;
-              case PomodoroStage.longBreak:
+              case PomodoroStage.play:
                 return Colors.blue;
             }
           }();
@@ -263,12 +250,13 @@ class _TimerWidgetState extends State<TimerWidget> {
                     dragSecondsLeft += details.delta.dx;
                   });
                   final seconds = max(0, dragSecondsLeft.toInt());
-                  context.read(pomodoroServiceProvider).setTimeSeconds(seconds: seconds);
+                  context.read(pomodoroServiceProvider).setCountDown(stage: stage, seconds: seconds);
                 },
                 onTap: () {
                   final seconds = service.pomodoro.secondsLeft + 60;
-                  context.read(pomodoroServiceProvider).setTimeSeconds(seconds: seconds);
+                  context.read(pomodoroServiceProvider).setCountDown(stage: stage, seconds: seconds);
                 },
+                // q` feat: Countdown
                 child: Center(
                   child: Text(
                     "$minutes:$seconds",
@@ -276,43 +264,52 @@ class _TimerWidgetState extends State<TimerWidget> {
                   ),
                 ),
               ),
-              // Pause/Start button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: InkWell(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(16.0),
-                  ),
-                  onTap: () {
-                    if (service.isTimerRunning) {
-                      service.playAudio('mixkit-tech-click-1140.wav');
-                      service.pauseTimer();
-                    } else {
-                      service.playAudio('mixkit-glitchy-cinematic-suspense-hit-679.wav');
-                      service.startTimer();
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      height: 56.0,
-                      width: 220.0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Text(
-                            service.isTimerRunning ? "PAUSE" : "START",
-                            style: Theme.of(context).primaryTextTheme.headlineSmall!.merge(
-                                  TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: baseColor,
-                                  ),
+              // qq` feat: Display Day Dots
+              SizedBox(
+                height: 16.0,
+                width: double.infinity,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ...daydots(hours),
+                  ],
+                ),
+              ),
+              SizedBox(height: 4.0),
+              // q` feat: Pause/Start button
+              InkWell(
+                borderRadius: BorderRadius.all(
+                  Radius.circular(12.0),
+                ),
+                onTap: () {
+                  if (service.isTimerRunning) {
+                    service.playAudio('mixkit-tech-click-1140.wav');
+                    service.pauseTimer();
+                  } else {
+                    service.playAudio('mixkit-glitchy-cinematic-suspense-hit-679.wav');
+                    service.startTimer();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: SizedBox(
+                    height: 56.0,
+                    width: 220.0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          service.isTimerRunning ? "PAUSE" : "START",
+                          style: Theme.of(context).primaryTextTheme.headlineSmall!.merge(
+                                TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: baseColor,
                                 ),
-                          ),
+                              ),
                         ),
                       ),
                     ),
@@ -325,8 +322,90 @@ class _TimerWidgetState extends State<TimerWidget> {
       ),
     );
   }
+
+  // qq` docs: daydots
+  /// Make a dot for each hour, grouping consecutive hours into one rounded rectanglar dot
+  /// Each dot is colored based on how many minutes were spent in that hour.
+  /// Zero minutes is transparent black
+  /// Less than 45 minutes is a translucent white
+  Iterable<Widget> daydots(List<double> hours) {
+    // Exit if we have no data
+    if (hours.isEmpty) {
+      return [SizedBox(height: 16.0)];
+    }
+
+    // Find index of first non zero in hours
+    final firstNonZero = hours.indexWhere((element) => element > 0);
+    // Find the last non zero in hours
+    final lastNonZero = hours.lastIndexWhere((element) => element > 0) + 1;
+
+    // Exit if we have no effective data
+    if (firstNonZero < 0 || lastNonZero < firstNonZero) {
+      return [SizedBox(height: 16.0)];
+    }
+
+    // Prepare the dots
+    List<Widget> dots = [];
+
+    int count = 1;
+    double previousHour = hours[firstNonZero];
+    for (int i = firstNonZero + 1; i < lastNonZero; i++) {
+      final hour = hours[i];
+      if (_isInSameRange(hour, previousHour)) {
+        count += 1;
+      } else {
+        dots.add(
+          _dot(count, previousHour),
+        );
+
+        count = 1;
+        previousHour = hour;
+      }
+    }
+    if (count > 0) {
+      dots.add(
+        _dot(count, previousHour),
+      );
+    }
+    return dots;
+  }
+
+  bool _isInSameRange(double a, double b) {
+    if (a == 0.0 && b == 0.0) return true;
+    if (a > 0.0 && a < 0.75 && b > 0.0 && b < 0.75) return true;
+    if (a >= 0.75 && b >= 0.75) return true;
+    return false;
+  }
+
+  Widget _dot(int count, double value) {
+    final width = count * 16.0;
+    final color = () {
+      if (value <= 0.0) {
+        return Colors.black.withAlpha(64);
+      }
+      if (value < 0.75) {
+        return Colors.white.withAlpha(128);
+      }
+      return Colors.white;
+    }();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1.0),
+      child: SizedBox(
+        width: width,
+        height: 16.0,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
+// q` docs: PomodoroStage
 extension NumExtensions on num {
   /// Returns this number as a string, padding it with leading 0s to make sure
   /// its at least [numDigits] long

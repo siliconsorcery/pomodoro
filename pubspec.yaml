@@ -13,6 +13,7 @@ dependencies:
     flutter_riverpod: ^0.13.1
     bitsdojo_window: ^0.1.5
     audioplayers: ^4.0.1
+    shared_preferences: ^2.1.1
 
 dev_dependencies:
     flutter_test:

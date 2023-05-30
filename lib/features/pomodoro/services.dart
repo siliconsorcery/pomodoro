@@ -4,18 +4,56 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pomodoro/features/pomodoro/models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final pomodoroServiceProvider = ChangeNotifierProvider((ref) => PomodoroService());
 
 class PomodoroService extends ChangeNotifier {
-  Timer? _timer;
-  AudioPlayer _audioPlayer = AudioPlayer();
-
   Pomodoro pomodoro = Pomodoro();
 
-  void setPomodoroStage(PomodoroStage stage) {
-    pomodoro.currentStage = stage;
+  Timer? _timer;
+  bool _isCountingDown = false;
+  AudioPlayer _audioPlayer = AudioPlayer();
+  List<double> _hours = [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ];
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  void setStage(PomodoroStage stage) {
+    pomodoro.setStage(stage);
+
     pauseTimer();
+    notifyListeners();
+  }
+
+  List<double> get hours => _hours;
+
+  void logTime({int seconds = 1}) {
+    final hour = DateTime.now().hour;
+    _hours[hour] += seconds / 3600;
     notifyListeners();
   }
 
@@ -23,51 +61,43 @@ class PomodoroService extends ChangeNotifier {
     await _audioPlayer.play(AssetSource(asset));
   }
 
-  // q` startTimer
+  // q` feat: startTimer
   void startTimer() {
+    _isCountingDown = true;
     notifyListeners();
+
     _timer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      // Add one second to the hourly running totals
+      logTime();
+
+      // Are we finished?
       if (pomodoro.tick()) {
         timer.cancel();
+        _isCountingDown = false;
 
-        // q` Sound the alarm.
-        switch (pomodoro.currentStage) {
-          case PomodoroStage.work:
+        // q` feat: Sound the alarm
+        switch (pomodoro.stage) {
+          case PomodoroStage.rest:
             playAudio('mixkit-cinematic-tribal-flute-2306.wav');
-            // () async {
-            //   await _audioPlayer.play(AssetSource('mixkit-cinematic-tribal-flute-2306.wav'));
-            //   Log.info("Finish Work");
-            // }();
             break;
-          case PomodoroStage.shortBreak:
+          case PomodoroStage.work:
             playAudio('mixkit-cinematic-trailer-apocalypse-horn-724.wav');
-            // () async {
-            //   await _audioPlayer.play(AssetSource('mixkit-cinematic-trailer-apocalypse-horn-724.wav'));
-            //   Log.info("Finish Short Break");
-            // }();
             break;
-          case PomodoroStage.longBreak:
+          case PomodoroStage.play:
             playAudio('mixkit-eerie-trailer-horn-transition-2291.wav');
-            // () async {
-            //   await _audioPlayer.play(AssetSource('mixkit-eerie-trailer-horn-transition-2291.wav'));
-            //   Log.info("Finish Long Break");
-            // }();
             break;
         }
 
-        // audioPlayer.play(
-        //   DeviceFileSource('assets/mixkit-epic-orchestra-transition-2290.wav'),
-        // );
-
-        switch (pomodoro.currentStage) {
+        // q` Advance to next stage
+        switch (pomodoro.stage) {
+          case PomodoroStage.rest:
+            setStage(PomodoroStage.work);
+            break;
           case PomodoroStage.work:
-            setPomodoroStage(PomodoroStage.shortBreak);
+            setStage(PomodoroStage.rest);
             break;
-          case PomodoroStage.shortBreak:
-            setPomodoroStage(PomodoroStage.work);
-            break;
-          case PomodoroStage.longBreak:
-            setPomodoroStage(PomodoroStage.work);
+          case PomodoroStage.play:
+            setStage(PomodoroStage.work);
             break;
         }
       }
@@ -76,38 +106,65 @@ class PomodoroService extends ChangeNotifier {
     });
   }
 
-  /// q` pauseTimer
+  // q` feat: pauseTimer
   void pauseTimer() {
+    _isCountingDown = false;
     _timer?.cancel();
     notifyListeners();
   }
 
+  // q` feat: isTimerRunning
   bool get isTimerRunning => _timer?.isActive ?? false;
 
-  PomodoroStage get currentStage => pomodoro.currentStage;
+  // q` feat: stage
+  PomodoroStage get stage => pomodoro.stage;
 
-  /// Configures the time for the given stage. This will reset the timer
-  void setTimeForStage({required PomodoroStage stage, required int minutes}) {
-    switch (stage) {
-      case PomodoroStage.work:
-        pomodoro.workMin = minutes;
-        break;
-      case PomodoroStage.shortBreak:
-        pomodoro.shortBreakMin = minutes;
-        break;
-      case PomodoroStage.longBreak:
-        pomodoro.longBreakMin = minutes;
-        break;
+  // q` feat: setTimeForStage
+  // Set the default countdown timer for the given stage
+  void setTimeForStage({
+    required PomodoroStage stage,
+    required int seconds,
+  }) async {
+    final SharedPreferences prefs = await _prefs;
+    final _seconds = seconds.clamp(1 * 60, 2 * 60 * 60);
+    if (_isCountingDown == false) {
+      switch (stage) {
+        case PomodoroStage.rest:
+          prefs.setInt('restCountDownDefault', _seconds);
+          break;
+        case PomodoroStage.work:
+          prefs.setInt('workCountDownDefault', _seconds);
+          break;
+        case PomodoroStage.play:
+          prefs.setInt('playCountDownDefault', _seconds);
+          break;
+      }
     }
-
-    pauseTimer();
+    // pauseTimer();
     notifyListeners();
   }
 
-  void setTimeSeconds({
+  // q` Get from user preferences default countdown timer for the given stage
+  Future<int> getTimeForStage({required PomodoroStage stage}) async {
+    final SharedPreferences prefs = await _prefs;
+    switch (stage) {
+      case PomodoroStage.rest:
+        return prefs.getInt('restCountDownDefault') ?? 5 * 60;
+      case PomodoroStage.work:
+        return prefs.getInt('workCountDownDefault') ?? 25 * 60;
+      case PomodoroStage.play:
+        return prefs.getInt('playCountDownDefault') ?? 60 * 60;
+    }
+  }
+
+  // q` feat: setCountDown
+  void setCountDown({
+    required PomodoroStage stage,
     required int seconds,
-  }) {
+  }) async {
     pomodoro.secondsLeft = seconds;
     notifyListeners();
+
+    setTimeForStage(stage: stage, seconds: seconds);
   }
 }
