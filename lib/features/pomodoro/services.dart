@@ -174,11 +174,13 @@ class PomodoroService extends ChangeNotifier {
     setTimeForStage(stage: stage, seconds: seconds);
   }
 
+  // Reset the hourly running totals at midnight
   void _dayChangeResetHours() {
     final now = DateTime.now();
     if (_today.day == now.day && _today.month == now.month && _today.year == now.year) {
       return;
     } else {
+      _today = now;
       _hours = [
         0.0,
         0.0,
